@@ -13,11 +13,12 @@
  - 一个Cloudflare账号
  - 一个静态空间用于放前端(Github Pages就行)
 
-### 1.获取refresh token等等
+### 1.获取refresh token等
+本程序需要`refresh_token` `client_id` `client_secret` `redirect_uri`
 看[Microsoft Graph Tool](https://xp-play.top/tool/microsoft-graph-api.html)
 
 ### 2.部署Worker
-下载`index.js`并将refresh token填入第一行`config`中  
+下载`index.js`并将`refresh_token` `client_id` `client_secret` `redirect_uri`填入第一行`config`中  
 部署在Cloudflare Worker上
 
 ### 3.部署前端
