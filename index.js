@@ -110,10 +110,9 @@ async function onedrive(pathname){
                     let head,readme;
                     for (let e of data.children) {
                         if (head&&readme) {break};
-                        let nameLowerCase = e.name.toLowerCase();
-                        if (nameLowerCase === "head.md") {
+                        if (e.name === "HEAD.md") {
                             head = await getMore(e.name);
-                        } else if (nameLowerCase === "readmd.md") {
+                        } else if (e.name === "README.md") {
                             readme = await getMore(e.name);
                         }
                         async function getMore(name){
@@ -200,13 +199,6 @@ async function onedrive(pathname){
         if ("folder" in data){
             render.folder = [];
             data.children.forEach(e => {
-                if (information) {
-                    let nameLowerCase = e.name.toLowerCase();
-                    if (nameLowerCase === "head.md" || nameLowerCase === "readme.md") {
-                        return;
-                    }
-                }
-                nameLowerCase = null;
                 let item = {
                     "name": e.name,
                     "size": e.size,

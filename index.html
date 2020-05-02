@@ -88,6 +88,7 @@
             <div class="icon material-icons">folder</div>
             <div class="filename">.. 上一层文件夹</div></a>` : ""}`;
             list.forEach(e => {
+                if (e.name === "HEAD.md" || e.name === "README.md") {return};
                 output += `<a class="item" href="#${pathname.slice(1) + e.name}">
                 <div class="icon">
                 <i class="material-icons">${e.folder ? "folder" : (e.file.mineType ? materialIcon(e.file.mineType) : "insert_drive_file")}</i>
