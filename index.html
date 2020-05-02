@@ -45,14 +45,34 @@
                         <a href="${drive.result.file.url}" download class="xpw-button">下载该文件</a>
                         <a href="#${pathname.slice(0,pathname.lastIndexOf("/")).slice(1)}" class="xpw-button">返回目录</a></p>`;
                     }
+                } else if (drive.type === "NotFound") {
+                    error = ["Not Found","404 未找到"];
+                } else if (drive.type === "ServerError") {
+                    error = ["Server Error","服务器错误"]
                 } else {
                     error = ["Unknow Data", "请求的数据无法解析"]
                 }
             } else {
-                error = ["NetworkError", "请求失败"]
+                error = ["Network Error", "请求失败"]
             }
             if (error[0]) {
                 console.error(`${error[0]}: ${error[1]}`);
+                switch (error[0]) {
+                    case "Not Found":
+                        output = `<h3>404 Not Found</h3>
+                        <p>文件(夹)${pathname}未找到<br>
+                        <a href="#" class="xpw-button">返回根目录</a></p>`
+                        break;
+                    case "Server Error":
+                        output = `<h3>500 Server Error</h3>
+                        <p>服务器错误</p><br>
+                        <button onclick="index()" class="xpw-button">重试</button>`
+                        break;
+                    case "Network Error":
+                        output = `<h3>网络错误</h3>
+                        <p>网络错误，或服务器未返回任何信息</p><br>
+                        <button onclick="index()" class="xpw-button">重试</button>`
+                }
             }
             document.getElementById("page_subtitle").innerHTML = `<a href="#">根目录</a> ${pathname.replace(/\//g," > ")}`
             element.innerHTML = output || `<p>${error[0]}: ${error[1]}</p><p><button class="xpw-button" onclick="index()">重试</button></p>`;

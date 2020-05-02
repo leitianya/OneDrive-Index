@@ -92,7 +92,7 @@ async function onedrive(pathname){
     
         let data = await graphapi(pathname);
         let error = null;
-        if (resp.ok) {
+        if (data.ok) {
             data = await data.json();
             console.log(data);
             if ("file" in data) {
@@ -135,18 +135,18 @@ async function onedrive(pathname){
                 }
                 return folder;
             } else {
-                error = `unknown data ${JSON.stringify(data)}`;
+                error = data;
             }
         } else {
-            error = (await resp.json()).error;
+            error = await data.json();
         }
     
         if (error) {
-            switch (error.code) {
-                case "itemNotFound":
-                    return {"status":404,"type":"NotFound","message":"未找到物品"};
-                default:
-                    return {"status":500,"type":"ServerError","message":"500 服务器错误","error":error};
+            console.log("Error: %o",error);
+            if (error.error.code === "itemNotFound") {
+                return {"status":404,"type":"NotFound","message":"未找到物品"};
+            } else {
+                return {"status":500,"type":"ServerError","message":"500 服务器错误","error":error};
             }
         }
     }
