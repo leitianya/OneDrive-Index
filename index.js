@@ -105,7 +105,7 @@ async function onedrive(pathname){
                 }
             } else if ("folder" in data) {
                 if (!pathname.endsWith("/")) {pathname += "/"};
-                let folder = {"status":200,"type":"FolderInfo","result":renderData(data)};
+                let folder = {"status":200,"type":"FolderInfo","result":renderData(data,config.information)};
                 if (config.information) {
                     let head,readme;
                     for (let e of data.children) {
@@ -199,6 +199,9 @@ async function onedrive(pathname){
         if ("folder" in data){
             render.folder = [];
             data.children.forEach(e => {
+                if (information&&"file" in e&&(e.name==="README.md"||e.name==="HEAD.md")) {
+                    return;
+                }
                 let item = {
                     "name": e.name,
                     "size": e.size,
