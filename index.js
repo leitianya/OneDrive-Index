@@ -15,17 +15,17 @@ addEventListener("fetch", event => {
     event.respondWith(handleRequest(event.request))
 })
 async function handleRequest(request) {
-    let pathname = request.url.replace(new URL(request.url).origin,"");
+    let pathname = request.url.replace(new URL(request.url).origin, "");
     let resp = await onedrive(pathname);
     if (resp.type === "RedirectDownload") {
-        return new Response(null,{
+        return new Response(null, {
             "status": 302,
             "headers": {
                 "Location": resp.result
             }
         })
     } else if (resp.type === "ProxiedDownload") {
-        return new Response(resp.result[0],{
+        return new Response(resp.result[0], {
             "status": resp.result[1].status,
             "headers": {
                 ...resp.result[1].headers
@@ -43,10 +43,10 @@ async function handleRequest(request) {
         if (resp.type === "FolderInfo") {
             value.headers["Cache-Control"] = "max-age=21600";
         }
-        return new Response(JSON.stringify(resp),value);
+        return new Response(JSON.stringify(resp), value);
     }
 }
-async function onedrive(pathname){
+async function onedrive(pathname) {
     let _accessToken = null;
     /*获取AccessToken*/
     async function getAccessToken() {
@@ -79,7 +79,7 @@ async function onedrive(pathname){
     async function graphapi(pathname) {
         let accessToken = await getAccessToken();
         let base = config.base;
-        let url = `https://graph.microsoft.com/v1.0/me/drive/root${base+pathname==="/"?"":":"+base+pathname}?select=name,eTag,size,id,folder,file,lastModifiedDateTime,%40microsoft.graph.downloadUrl&expand=children(select%3Dname,eTag,size,id,folder,file,lastModifiedDateTime)`;
+        let url = `https://graph.microsoft.com/v1.0/me/drive/root${base + pathname === "/" ? "" : ":" + base + pathname}?select=name,eTag,size,id,folder,file,lastModifiedDateTime,%40microsoft.graph.downloadUrl&expand=children(select%3Dname,eTag,size,id,folder,file,lastModifiedDateTime)`;
         let resp = await fetch(url, {
             headers: {
                 "Authorization": `bearer ${accessToken}`
@@ -104,20 +104,20 @@ async function onedrive(pathname){
                     return {"status":200,"type":"FileInfo","result":renderData(data)};
                 }
             } else if ("folder" in data) {
-                if (!pathname.endsWith("/")) {pathname += "/"};
                 let folder = {"status":200,"type":"FolderInfo","result":renderData(data,config.information)};
+                if (!pathname.endsWith("/")) { pathname += "/" };
                 if (config.information) {
-                    let head,readme;
+                    let head, readme;
                     for (let e of data.children) {
-                        if (head&&readme) {break};
+                        if (head && readme) { break };
                         if (e.name === "HEAD.md") {
                             head = await getMore(e.name);
                         } else if (e.name === "README.md") {
                             readme = await getMore(e.name);
                         }
-                        async function getMore(name){
-                            let data = await graphapi(pathname+name);
-                            console.log(`fetch ${pathname+name}`)
+                        async function getMore(name) {
+                            let data = await graphapi(pathname + name);
+                            console.log(`fetch ${pathname + name}`)
                             if (data.ok) {
                                 data = await data.json();
                                 console.log(data)
@@ -128,8 +128,8 @@ async function onedrive(pathname){
                             }
                         }
                     }
-                    if (head||readme) {
-                        folder.information = [head,readme];
+                    if (head || readme) {
+                        folder.information = [head, readme];
                     }
                 }
                 return folder;
@@ -139,9 +139,9 @@ async function onedrive(pathname){
         } else {
             error = await data.json();
         }
-    
+
         if (error) {
-            console.log("Error: %o",error);
+            console.log("Error: %o", error);
             if (error.error.code === "itemNotFound") {
                 return {"status":404,"type":"NotFound","message":"未找到物品"};
             } else {
@@ -149,46 +149,62 @@ async function onedrive(pathname){
             }
         }
     }
-    function renderData(data,information=false) {
+    function renderData(data, information = false) {
         function toHumanFileSize(bytes, si) {
-            bytes = parseInt(bytes,10)
+            bytes = parseInt(bytes, 10)
             var thresh = si ? 1000 : 1024;
-            if(Math.abs(bytes) < thresh) {
+            if (Math.abs(bytes) < thresh) {
                 return bytes + " B";
             }
             var units = si
-                ? ["kB","MB","GB","TB","PB","EB","ZB","YB"]
-                : ["KiB","MiB","GiB","TiB","PiB","EiB","ZiB","YiB"];
+                ? ["kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]
+                : ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
             var u = -1;
             do {
                 bytes /= thresh;
                 ++u;
-            } while(Math.abs(bytes) >= thresh && u < units.length - 1);
-            return bytes.toFixed(1)+" "+units[u];
+            } while (Math.abs(bytes) >= thresh && u < units.length - 1);
+            return bytes.toFixed(1) + " " + units[u];
         }
         /*新手，写的渣见谅*/
+        function dateFormat(date, format) {
+            var o = {
+                "M+": date.getMonth() + 1,
+                "d+": date.getDate(),
+                "h+": date.getHours(),
+                "m+": date.getMinutes(),
+                "s+": date.getSeconds(),
+                "q+": Math.floor((date.getMonth() + 3) / 3),
+                "S": date.getMilliseconds()
+            };
+            if (/(y+)/.test(format)) {
+                format = format.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
+            }
+            for (var k in o) {
+                if (new RegExp(`(${k})`).test(format)) {
+                    format = format.replace(RegExp.$1, RegExp.$1.length == 1 ? o[k] : ("00" + o[k]).substr(("" + o[k]).length));
+                }
+            }
+            return format
+        }
         function toNormalDate(date) {
-            let dateTime = date.split("T");
-            dateTime[1] = dateTime[1].split("Z")[0];
-            let parts = dateTime[0].split("-");
-        
+            date = date.split("T");
+            date[1] = date[1].split("Z")[0];
+            let parts = date[0].split("-");
+
             let year = parts[0];
             /* new Date() 需要 -1*/
-            let mouth = Number(parts[1]) -1 ;
+            let mouth = Number(parts[1]) - 1;
             let day = parts[2];
-        
-            parts = dateTime[1].split(":");
-            
+
+            parts = date[1].split(":");
+
             /*这个好像叫DateTimeOffset，要加8小时来着*/
             let hour = Number(parts[0]) + 8;
             let min = parts[1];
             let sec = parts[2];
-        
-            Date.prototype.format=Date.prototype.format||function(format){var o={"M+":this.getMonth()+1,"d+":this.getDate(),"h+":this.getHours(),"m+":this.getMinutes(),"s+":this.getSeconds(),"q+":Math.floor((this.getMonth()+3)/3),"S":this.getMilliseconds()};if(/(y+)/.test(format))format=format.replace(RegExp.$1,(this.getFullYear()+"").substr(4-RegExp.$1.length));for(var k in o)if(new RegExp("("+k+")").test(format))format=format.replace(RegExp.$1,RegExp.$1.length==1?o[k]:("00"+o[k]).substr((""+o[k]).length));return format};
-            let fullDate = new Date(year, mouth, day, hour, min, sec);
-            /*闲的无聊手动回收内存*/
-            dateTime = parts = year = mouth = day = hour = min = sec =null;
-            return fullDate.format("yyyy-MM-dd hh:mm:ss");
+
+            return dateFormat(new Date(year, mouth, day, hour, min, sec), "yyyy-MM-dd hh:mm:ss");
         }
         let render = {
             "name": data.name,
@@ -196,10 +212,10 @@ async function onedrive(pathname){
             "humanSize": toHumanFileSize(data.size),
             "time": toNormalDate(data.lastModifiedDateTime)
         };
-        if ("folder" in data){
+        if ("folder" in data) {
             render.folder = [];
             data.children.forEach(e => {
-                if (information&&"file" in e&&(e.name==="README.md"||e.name==="HEAD.md")) {
+                if (information && "file" in e && (e.name === "README.md" || e.name === "HEAD.md")) {
                     return;
                 }
                 let item = {
@@ -216,7 +232,7 @@ async function onedrive(pathname){
                     item.file = {
                         "mineType": e.file.mineType,
                     }
-                    if (e.file.hashes&&e.file.hashes.quickXorHash) {
+                    if (e.file.hashes && e.file.hashes.quickXorHash) {
                         item.file.hash = e.file.hashes.quickXorHash
                     }
                 }
