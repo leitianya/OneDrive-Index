@@ -10,6 +10,8 @@ const config = {
     "information": true,
     /*使用Cloudflare代理文件，URL?proxied*/
     "proxyDownload": true,
+    /*accessToken 会根据上方验证信息获取，不用填写*/
+    "accessToken": "",
 }
 addEventListener("fetch", event => {
     event.respondWith(handleRequest(event.request))
@@ -40,18 +42,19 @@ async function handleRequest(request) {
             }
         }
         /*缓存文件夹信息*/
-        if (resp.type === "FolderInfo") {
+        if (resp.type === "FolderInfo"
+        || resp.type === "ProxiedDownload"
+        || resp.type === "RedirectDownload") {
             value.headers["Cache-Control"] = "max-age=21600";
         }
         return new Response(JSON.stringify(resp), value);
     }
 }
 async function onedrive(pathname) {
-    let _accessToken = null;
     /*获取AccessToken*/
     async function getAccessToken() {
-        if (_accessToken) return _accessToken;
-        resp = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
+        if (config.accessToken) return config.accessToken;
+        let resp = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
             method: "POST",
             body: `client_id=${config.client_id}&redirect_uri=${config.redirect_uri}&client_secret=${config.client_secret}
         &refresh_token=${config.refresh_token}&grant_type=refresh_token`,
@@ -61,9 +64,9 @@ async function onedrive(pathname) {
         });
         if (resp.ok) {
             console.info("access_token refresh success.")
-            const data = await resp.json()
-            _accessToken = data.access_token
-            return _accessToken;
+            resp = await resp.json()
+            config.accessToken = resp.access_token
+            return config.accessToken;
         } else throw `getAccessToken error ${ JSON.stringify(await resp.text())}`
     }
     /*代理下载*/
@@ -80,6 +83,7 @@ async function onedrive(pathname) {
         let accessToken = await getAccessToken();
         let base = config.base;
         let url = `https://graph.microsoft.com/v1.0/me/drive/root${base + pathname === "/" ? "" : ":" + base + pathname}?select=name,eTag,size,id,folder,file,lastModifiedDateTime,%40microsoft.graph.downloadUrl&expand=children(select%3Dname,eTag,size,id,folder,file,lastModifiedDateTime)`;
+        console.log("请求Graph API: "+url);
         let resp = await fetch(url, {
             headers: {
                 "Authorization": `bearer ${accessToken}`
